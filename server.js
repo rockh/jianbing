@@ -1,13 +1,15 @@
 #!/bin/env node
 //  OpenShift sample Node application
-var express = require('express');
-var fs      = require('fs');
+var express     = require('express');
+var bodyParser  = require('body-parser');
+var builder     = require('botbuilder');
+var fs          = require('fs');
 
 
 /**
  *  Define the sample application.
  */
-var SampleApp = function() {
+var JianBingBot = function() {
 
     //  Scope.
     var self = this;
@@ -93,17 +95,34 @@ var SampleApp = function() {
      *  Create the routing table entries + handlers for the application.
      */
     self.createRoutes = function() {
-        self.routes = { };
+      self.router = express.Router();
 
-        self.routes['/asciimo'] = function(req, res) {
-            var link = "http://i.imgur.com/kmbjB.png";
-            res.send("<html><body><img src='" + link + "'></body></html>");
-        };
+      // middleware to use for all requests
+      self.router.use(function (req, res, next) {
+          console.log('[' + req.method + '] ' + req.originalUrl + ',  [body] ' + JSON.stringify(req.body));
+          next(); // make sure we go to the next routes and don't stop here
+      });
 
-        self.routes['/'] = function(req, res) {
-            res.setHeader('Content-Type', 'text/html');
-            res.send(self.cache_get('index.html') );
-        };
+      self.router.get('/', function (req, res) {
+          res.json({ message: 'Hey, I\'m JianBing bot!' });
+      });
+
+
+      // Create chat bot
+      var connector = new builder.ChatConnector({
+          appId: process.env.SKYPE_BOT_ID,
+          appPassword: process.env.SKYPE_BOT_PASSWORD
+      });
+      var bot = new builder.UniversalBot(connector);
+      self.router.post('/api/messages', connector.listen());
+      bot.dialog('/', function (session) {
+          session.send("Hello World");
+      });
+
+
+
+      // all of our routes will be prefixed with /api
+      self.app.use('/api', self.router);
     };
 
 
@@ -112,13 +131,12 @@ var SampleApp = function() {
      *  the handlers.
      */
     self.initializeServer = function() {
-        self.createRoutes();
-        self.app = express.createServer();
+      self.app = express();
+      // configure app to use bodyParser(), this will let us get the data from a POST
+      self.app.use(bodyParser.urlencoded({ extended: true }));
+      self.app.use(bodyParser.json());
 
-        //  Add handlers for the app (from the routes).
-        for (var r in self.routes) {
-            self.app.get(r, self.routes[r]);
-        }
+      self.createRoutes();
     };
 
 
@@ -126,12 +144,12 @@ var SampleApp = function() {
      *  Initializes the sample application.
      */
     self.initialize = function() {
-        self.setupVariables();
-        self.populateCache();
-        self.setupTerminationHandlers();
+      self.setupVariables();
+      self.populateCache();
+      self.setupTerminationHandlers();
 
-        // Create the express server and routes.
-        self.initializeServer();
+      // Create the express server and routes.
+      self.initializeServer();
     };
 
 
@@ -153,7 +171,6 @@ var SampleApp = function() {
 /**
  *  main():  Main code.
  */
-var zapp = new SampleApp();
-zapp.initialize();
-zapp.start();
-
+var jianbingBot = new JianBingBot();
+jianbingBot.initialize();
+jianbingBot.start();
