@@ -114,7 +114,7 @@ var JianBingBot = function() {
           appPassword: process.env.SKYPE_BOT_PASSWORD
       });
       var bot = new builder.UniversalBot(connector);
-      self.router.post('/api/messages', connector.listen());
+      self.router.post('/messages', connector.listen());
       bot.dialog('/', function (session) {
           session.send("Hello World");
       });
