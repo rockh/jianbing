@@ -116,7 +116,7 @@ var JianBingBot = function() {
       var bot = new builder.UniversalBot(connector);
       self.router.post('/messages', connector.listen());
       bot.dialog('/', function (session) {
-          session.send("Hello World");
+          session.send(session.message.text);
       });
 
 
